@@ -25,4 +25,5 @@ non_jit = OrderedDict([
     ('vsc', ['VSCShunt']),
     ('renewable', ['REGCA1', 'REECA1', 'REPCA1', 'WTDTA1', 'WTDS', 'WTARA1', 'WTPTA1', 'WTTQA1', 'PVD1']),
     ('experimental', ['PI2', 'TestDB1', 'TestPI', 'TestLagAWFreeze']),
+    ('synchronverter', ['Synchronverter']),
 ])

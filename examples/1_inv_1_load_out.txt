@@ -1,0 +1,43 @@
+ANDES 1.1.3.post22.dev0+g931e1b8
+Copyright (C) 2015-2020 Hantao Cui
+
+ANDES comes with ABSOLUTELY NO WARRANTY
+Case file: /Users/oscar/Documents/heila/tools/andes-heila/andes/cases/local/1_inv_1_load.xlsx
+Report time: 09/14/2020 11:10:23 AM
+
+Power flow converged in 7 iterations.
+Flat-start: No
+
+Statistics:
+Buses                      2
+Generators                 1
+Committed Gens             1
+Loads                      1
+Shunts                     0
+Lines                      1
+Transformers               0
+Areas                      0
+
+EXTENDED SUMMARY:
+                      P (pu)        Q (pu)
+
+Generation            9.7823        5.9177
+Load                   11.59        -0.735
+
+BUS DATA:
+                    Bus Name        Vm(pu)      Va(rad.)
+
+1                          1             1   -5.6568e-19
+2                          2       0.79864      -0.61279
+
+LINE DATA:
+                   Line Name Fr. Bus (idx)  To Bus (idx)   P From (pu)   Q From (pu)     P To (pu)     Q To (pu)
+
+Line_0                  None             1             2        9.7823        5.9177       -9.1265       0.57877
+
+OTHER ALGEBRAIC VARIABLES:
+                            
+
+p Slack 1             9.7823
+q Slack 1             5.9177
+
