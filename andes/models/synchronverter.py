@@ -38,13 +38,13 @@ class SynchronverterData(ModelData):
                            tex_name='f',
                            )
 
-        self.rsh = NumParam(default=0.19, 
+        self.rsh = NumParam(default=19000, 
                             info="filter resistance", 
                             unit="ohm", z=True,
                             tex_name='r_{sh}'
                             )
 
-        self.xsh = NumParam(default=400, 
+        self.xsh = NumParam(default=40000000, 
                             info="filter reactance", 
                             unit="ohm", 
                             z=True,
@@ -59,7 +59,7 @@ class SynchronverterData(ModelData):
                             info="AC reactive power setting", 
                             unit="pu"
                             )
-        self.D = NumParam(default=13.2629, 
+        self.D = NumParam(default=1326.290, 
                           info="Droop coefficient"
                           )
 
@@ -70,24 +70,34 @@ class SynchronverterModel(Model):
 
     def __init__(self, system, config):
         Model.__init__(self, system, config)
-        self.group = 'RenGen'
+        #self.group = 'RenGen'
         self.flags.update({'tds': True})
 
-        self.a = ExtAlgeb(model='Bus',
+
+        self.a0 = ExtService(model='Bus',
                           src='a',
                           indexer=self.bus,
-                          tex_name=r'\theta',
-                          info='Bus voltage angle',
-                          e_str='-Pe',
+                          tex_name=r'\theta_0',
                           )
 
-        self.v = ExtAlgeb(model='Bus',
+        self.v0 = ExtService(model='Bus',
                           src='v',
                           indexer=self.bus,
-                          tex_name=r'V',
-                          info='Bus voltage magnitude',
-                          e_str='-Qe',
+                          tex_name=r'V_0',
                           )
+
+        # Initialization of internal power from PV (static generator) instance
+ 
+        self.Pe_0 = ExtService(model='StaticGen',
+                             src='p',
+                             indexer=self.gen,
+                             tex_name='Pe_{0}',
+                             )
+        self.Qe_0 = ExtService(model='StaticGen',
+                             src='q',
+                             indexer=self.gen,
+                             tex_name='Qe_{0}',
+                             )
 
         self.p0 = ExtService(model='StaticGen',
                              src='p',
@@ -102,13 +112,17 @@ class SynchronverterModel(Model):
 
         # --- variables---
 
-        self.Ipcmd = Algeb(tex_name='I_{pcmd}',
-                           info='current component for active power',
-                           e_str='Pe/v', v_str='0')
+        self.paux0 = ConstService(v_str='0',
+                                  tex_name='P_{aux0}',
+                                  info='const. auxiliary input')
 
-        self.Iqcmd = Algeb(tex_name='I_{qcmd}',
-                           info='current component for reactive power',
-                           e_str='-Qe/v', v_str='0')
+        # self.Ipcmd = Algeb(tex_name='I_{pcmd}',
+        #                    info='current component for active power',
+        #                    e_str='Pe/v')
+
+        # self.Iqcmd = Algeb(tex_name='I_{qcmd}',
+        #                    info='current component for reactive power',
+        #                    e_str='Qe/v')
 
         self.gsh = ConstService(tex_name='g_{sh}', 
                                 v_str='re(1/(rsh + 1j * xsh))', 
@@ -123,22 +137,39 @@ class SynchronverterModel(Model):
                               info='Constant Inverter Voltage'
                               )
 
-        self.Pe = Algeb(tex_name='P_e', info='Active power output',
-                        v_str='Pe', 
-                        e_str='gsh * (es ** 2) - v * es * (gsh * cos(theta_s - a) + bsh * sin(theta_s - a))'
+        self.a = ExtAlgeb(model='Bus',
+                          src='a',
+                          indexer=self.bus,
+                          tex_name=r'\theta',
+                          info='Bus voltage phase angle', 
+                          e_str='-(gsh * (es ** 2) - v * es * (gsh * cos(theta_s - a) + bsh * sin(theta_s - a)))'
                         )
-        self.Qe = Algeb(tex_name='Q_e', info='Reactive power output',
-                        v_str='Qe', 
-                        e_str='bsh * (es ** 2) + v * es * (gsh * sin(theta_s - a) - bsh * cos(theta_s - a))'
+        self.v = ExtAlgeb(model='Bus',
+                          src='v',
+                          indexer=self.bus,
+                          tex_name=r'V', 
+                          info='Bus voltage magnitude',
+                          e_str='-(bsh * (es ** 2) + v * es * (gsh * sin(theta_s - a) - bsh * cos(theta_s - a)))'
                         )
 
         # state variables
         self.theta_s = State(info='inverter angle',
                            unit='rad',
-                           v_str='0',
+                           v_str='a0',
                            tex_name=r"\theta_s",
-                           e_str='(p0 - Pe)/D')
+                           e_str='(paux0 - gsh * (es ** 2) - v * es * (gsh * cos(theta_s - a) + bsh * sin(theta_s - a)))/D'
+                           )
 
+        self.omega = Algeb(info='Inverter frequency',
+                          unit='rad/s',
+                          v_str='2*pi*fn',
+                          tex_name=r'\omega',
+                          e_str='-omega + 2*pi*fn + theta_s'
+                          )
+
+        def v_numeric(self, **kwargs):
+            # disable corresponding `StaticGen`
+            self.system.groups['StaticGen'].set(src='u', idx=self.gen.v, attr='v', value=0)
 
 class Synchronverter(SynchronverterData, SynchronverterModel):
     def __init__(self, system, config):
